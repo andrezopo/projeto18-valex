@@ -10,7 +10,7 @@ export async function activateCard(req: Request, res: Response) {
 
 export async function getCardTransactionsBalance(req: Request, res: Response) {
   const { cardId } = req.params;
-  res.send("Rota de visualizar saldo e transações de cartões" + cardId);
+  res.send("Rota de visualizar saldo e transações de cartões " + cardId);
 }
 
 export async function blockCard(req: Request, res: Response) {

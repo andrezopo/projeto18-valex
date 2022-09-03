@@ -6,10 +6,12 @@ import {
   getCardTransactionsBalance,
   unlockCard,
 } from "../controllers/cardsController";
+import validateSchema from "../middlewares/validateSchema";
+import createCardSchema from "../schemas/createCardSchema";
 
 const cardsRouter = Router();
 
-cardsRouter.post("/create", createCard);
+cardsRouter.post("/create", validateSchema(createCardSchema), createCard);
 
 cardsRouter.post("/activate", activateCard);
 
