@@ -5,11 +5,19 @@ export async function createCard(req: Request, res: Response) {
   const cardInfo = req.body;
   const { apiKey } = res.locals;
   await cardsService.createCard(cardInfo, apiKey);
-  res.status(200).send("Card created succesfully");
+  res.status(201).send("Card created succesfully");
 }
 
 export async function activateCard(req: Request, res: Response) {
-  res.send("Rota de ativar cartões");
+  const {
+    cardId,
+    securityCode,
+    password,
+  }: { cardId: number; securityCode: string; password: string } = req.body;
+
+  await cardsService.activateCard(cardId, securityCode, password);
+
+  res.status(201).send("Card activated succesfully");
 }
 
 export async function getCardTransactionsBalance(req: Request, res: Response) {

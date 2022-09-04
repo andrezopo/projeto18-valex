@@ -19,6 +19,9 @@ export default async function handleErrors(
   if (error.type === "conflict") {
     return res.status(409).send(`${error.message}`);
   }
+  if (error.type === "notAcceptable") {
+    return res.status(406).send(`${error.message}`);
+  }
 
   return res.status(500).send("Internal Error!");
 }

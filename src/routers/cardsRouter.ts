@@ -8,6 +8,7 @@ import {
 } from "../controllers/cardsController";
 import validateApiKey from "../middlewares/validateApiKey";
 import validateSchema from "../middlewares/validateSchema";
+import activateCardSchema from "../schemas/activateCardSchema";
 import createCardSchema from "../schemas/createCardSchema";
 
 const cardsRouter = Router();
@@ -19,7 +20,7 @@ cardsRouter.post(
   createCard
 );
 
-cardsRouter.post("/activate", activateCard);
+cardsRouter.post("/activate", validateSchema(activateCardSchema), activateCard);
 
 cardsRouter.get("/:cardId", getCardTransactionsBalance);
 

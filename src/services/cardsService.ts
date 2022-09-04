@@ -8,6 +8,9 @@ import Cryptr from "cryptr";
 
 dotenv.config();
 
+const mySecret = process.env.SECRET;
+const cryptr = new Cryptr(mySecret!);
+
 export async function createCard(cardInfo: any, apiKey: string) {
   const company = await findByApiKey(apiKey);
   if (!company) {
@@ -34,7 +37,7 @@ export async function createCard(cardInfo: any, apiKey: string) {
 
 function populateCardInfos(cardInfo: any, employee: any) {
   const cardNumber = faker.finance.creditCardNumber();
-  const securityCode = encryptSecurityCode(faker.finance.creditCardCVV());
+  const securityCode = encryptSensibleData(faker.finance.creditCardCVV());
   const employeeName = employee.fullName;
   const cardholderName = generateCardholderName(employeeName);
   const expirationDate = generateExpirationDate();
@@ -67,9 +70,58 @@ function generateExpirationDate() {
   return expirationDate;
 }
 
-function encryptSecurityCode(securityCode: string) {
-  const mySecret = process.env.SECRET;
-  const cryptr = new Cryptr(mySecret!);
-  const encryptedSecurityCode = cryptr.encrypt(securityCode);
+function encryptSensibleData(sensibleData: string) {
+  const encryptedSecurityCode = cryptr.encrypt(sensibleData);
   return encryptedSecurityCode;
+}
+
+export async function activateCard(
+  id: number,
+  securityCode: string,
+  password: string
+) {
+  const card = await cardRepository.findById(id);
+  const passwordRegex = /^[0-9]{4}$/;
+
+  if (!card) {
+    console.log("entrei");
+    throw { type: "notFound", message: "Card not found" };
+  }
+  const decriptedSecurityCode = cryptr.decrypt(card.securityCode);
+  if (securityCode !== decriptedSecurityCode) {
+    throw { type: "unauthorized", message: "Invalid CVV" };
+  }
+  if (card.password !== null) {
+    throw { type: "conflict", message: "This card has been already activated" };
+  }
+  if (!passwordRegex.test(password)) {
+    throw { type: "unprocessableEntity", message: "Invalid password" };
+  }
+  if (isExpired(card.expirationDate)) {
+    throw { type: "notAcceptable", message: "Card expired" };
+  }
+
+  const encryptedPassword = encryptSensibleData(password);
+
+  const cardUpdateInfo = {
+    password: encryptedPassword,
+  };
+
+  cardRepository.update(id, cardUpdateInfo);
+}
+
+function isExpired(date: string) {
+  const monthYear = date.split("/");
+  const expiringYear = Number(monthYear[1]);
+  const expiringMonth = Number(monthYear[0]);
+  const currentYear = Number(dayjs().year().toString().substring(2));
+  const currentMonth = dayjs().month();
+  console.log([expiringYear, currentYear]);
+  if (
+    expiringYear < currentYear ||
+    (currentYear === expiringYear && currentMonth > expiringMonth)
+  ) {
+    return true;
+  }
+  return false;
 }
