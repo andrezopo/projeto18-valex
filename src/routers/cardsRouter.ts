@@ -9,7 +9,7 @@ import {
 import validateApiKey from "../middlewares/validateApiKey";
 import validateSchema from "../middlewares/validateSchema";
 import activateCardSchema from "../schemas/activateCardSchema";
-import blockCardSchema from "../schemas/blockCardSchema";
+import blockUnlockCardSchema from "../schemas/blockUnlockCardSchema";
 import createCardSchema from "../schemas/createCardSchema";
 
 const cardsRouter = Router();
@@ -25,8 +25,8 @@ cardsRouter.post("/activate", validateSchema(activateCardSchema), activateCard);
 
 cardsRouter.get("/:cardId", getCardTransactionsBalance);
 
-cardsRouter.post("/block", validateSchema(blockCardSchema), blockCard);
+cardsRouter.post("/block", validateSchema(blockUnlockCardSchema), blockCard);
 
-cardsRouter.post("/unlock", unlockCard);
+cardsRouter.post("/unlock", validateSchema(blockUnlockCardSchema), unlockCard);
 
 export default cardsRouter;

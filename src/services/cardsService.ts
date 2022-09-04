@@ -111,6 +111,32 @@ export async function blockCard(cardId: number, password: string) {
   await cardRepository.update(cardId, { isBlocked: true });
 }
 
+export async function unlockCard(cardId: number, password: string) {
+  const card = await cardRepository.findById(cardId);
+
+  if (!card) {
+    throw { type: "notFound", message: "Card not found" };
+  }
+  if (!card["password"]) {
+    throw {
+      type: "notAcceptable",
+      message: "Card has never been activated yet",
+    };
+  }
+  const decryptedPassword = cryptr.decrypt(card["password"]);
+  if (password !== decryptedPassword) {
+    throw { type: "unauthorized", message: "Incorrect password" };
+  }
+  if (isExpired(card.expirationDate)) {
+    throw { type: "notAcceptable", message: "Card expired" };
+  }
+  if (!card.isBlocked) {
+    throw { type: "conflict", message: "Card is already unlocked" };
+  }
+
+  await cardRepository.update(cardId, { isBlocked: false });
+}
+
 function populateCardInfos(cardInfo: any, employee: any) {
   const cardNumber = faker.finance.creditCardNumber();
   const securityCode = encryptSensibleData(faker.finance.creditCardCVV());

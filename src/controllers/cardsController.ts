@@ -35,5 +35,8 @@ export async function blockCard(req: Request, res: Response) {
 }
 
 export async function unlockCard(req: Request, res: Response) {
-  res.send("Rota de desbloquear cartões");
+  const { cardId, password }: { cardId: number; password: string } = req.body;
+  await cardsService.unlockCard(cardId, password);
+
+  res.status(200).send("Card unlocked succesfully");
 }
