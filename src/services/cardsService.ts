@@ -177,7 +177,7 @@ function encryptSensibleData(sensibleData: string) {
   return encryptedSecurityCode;
 }
 
-function isExpired(date: string) {
+export function isExpired(date: string) {
   const monthYear = date.split("/");
   const expiringYear = Number(monthYear[1]);
   const expiringMonth = Number(monthYear[0]);
