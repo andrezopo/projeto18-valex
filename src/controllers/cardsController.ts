@@ -28,7 +28,10 @@ export async function getCardTransactionsBalance(req: Request, res: Response) {
 }
 
 export async function blockCard(req: Request, res: Response) {
-  res.send("Rota de bloquear cartões");
+  const { cardId, password }: { cardId: number; password: string } = req.body;
+  await cardsService.blockCard(cardId, password);
+
+  res.status(200).send("Card blocked succesfully");
 }
 
 export async function unlockCard(req: Request, res: Response) {

@@ -37,6 +37,80 @@ export async function createCard(cardInfo: any, apiKey: string) {
   cardRepository.insert(newCard);
 }
 
+export async function activateCard(
+  id: number,
+  securityCode: string,
+  password: string
+) {
+  const card = await cardRepository.findById(id);
+  const passwordRegex = /^[0-9]{4}$/;
+
+  if (!card) {
+    throw { type: "notFound", message: "Card not found" };
+  }
+  const decriptedSecurityCode = cryptr.decrypt(card.securityCode);
+  if (securityCode !== decriptedSecurityCode) {
+    throw { type: "unauthorized", message: "Invalid CVV" };
+  }
+  if (card.password !== null) {
+    throw { type: "conflict", message: "This card has been already activated" };
+  }
+  if (!passwordRegex.test(password)) {
+    throw { type: "unprocessableEntity", message: "Invalid password" };
+  }
+  if (isExpired(card.expirationDate)) {
+    throw { type: "notAcceptable", message: "Card expired" };
+  }
+
+  const encryptedPassword = encryptSensibleData(password);
+
+  const cardUpdateInfo = {
+    password: encryptedPassword,
+    isBlocked: false,
+  };
+
+  cardRepository.update(id, cardUpdateInfo);
+}
+
+export async function getCardBalance(cardId: number) {
+  const card = await cardRepository.findById(cardId);
+  if (!card) {
+    throw { type: "notFound", message: "Card not found" };
+  }
+  const payments = await paymentRepository.findByCardId(cardId);
+  const recharges = await rechargeRepository.findByCardId(cardId);
+
+  const balance = calculateBalance(payments, recharges);
+
+  return generateTransactionsObject(balance, payments, recharges);
+}
+
+export async function blockCard(cardId: number, password: string) {
+  const card = await cardRepository.findById(cardId);
+
+  if (!card) {
+    throw { type: "notFound", message: "Card not found" };
+  }
+  if (!card["password"]) {
+    throw {
+      type: "notAcceptable",
+      message: "Card has never been activated yet",
+    };
+  }
+  const decryptedPassword = cryptr.decrypt(card["password"]);
+  if (password !== decryptedPassword) {
+    throw { type: "unauthorized", message: "Incorrect password" };
+  }
+  if (isExpired(card.expirationDate)) {
+    throw { type: "notAcceptable", message: "Card expired" };
+  }
+  if (card.isBlocked) {
+    throw { type: "conflict", message: "Card is already blocked" };
+  }
+
+  await cardRepository.update(cardId, { isBlocked: true });
+}
+
 function populateCardInfos(cardInfo: any, employee: any) {
   const cardNumber = faker.finance.creditCardNumber();
   const securityCode = encryptSensibleData(faker.finance.creditCardCVV());
@@ -77,40 +151,6 @@ function encryptSensibleData(sensibleData: string) {
   return encryptedSecurityCode;
 }
 
-export async function activateCard(
-  id: number,
-  securityCode: string,
-  password: string
-) {
-  const card = await cardRepository.findById(id);
-  const passwordRegex = /^[0-9]{4}$/;
-
-  if (!card) {
-    throw { type: "notFound", message: "Card not found" };
-  }
-  const decriptedSecurityCode = cryptr.decrypt(card.securityCode);
-  if (securityCode !== decriptedSecurityCode) {
-    throw { type: "unauthorized", message: "Invalid CVV" };
-  }
-  if (card.password !== null) {
-    throw { type: "conflict", message: "This card has been already activated" };
-  }
-  if (!passwordRegex.test(password)) {
-    throw { type: "unprocessableEntity", message: "Invalid password" };
-  }
-  if (isExpired(card.expirationDate)) {
-    throw { type: "notAcceptable", message: "Card expired" };
-  }
-
-  const encryptedPassword = encryptSensibleData(password);
-
-  const cardUpdateInfo = {
-    password: encryptedPassword,
-  };
-
-  cardRepository.update(id, cardUpdateInfo);
-}
-
 function isExpired(date: string) {
   const monthYear = date.split("/");
   const expiringYear = Number(monthYear[1]);
@@ -124,19 +164,6 @@ function isExpired(date: string) {
     return true;
   }
   return false;
-}
-
-export async function getCardBalance(cardId: number) {
-  const card = await cardRepository.findById(cardId);
-  if (!card) {
-    throw { type: "notFound", message: "Card not found" };
-  }
-  const payments = await paymentRepository.findByCardId(cardId);
-  const recharges = await rechargeRepository.findByCardId(cardId);
-
-  const balance = calculateBalance(payments, recharges);
-
-  return generateTransactionsObject(balance, payments, recharges);
 }
 
 function calculateBalance(payments: any[], recharges: any[]) {
