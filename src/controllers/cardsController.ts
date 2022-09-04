@@ -1,7 +1,11 @@
 import { Response, Request } from "express";
+import * as cardsService from "../services/cardsService";
 
 export async function createCard(req: Request, res: Response) {
-  res.send("Rota de criar cartões");
+  const cardInfo = req.body;
+  const { apiKey } = res.locals;
+  await cardsService.createCard(cardInfo, apiKey);
+  res.status(200).send("Card created succesfully");
 }
 
 export async function activateCard(req: Request, res: Response) {

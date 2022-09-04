@@ -1,4 +1,3 @@
-import { findByApiKey } from "../repositories/companyRepository";
 import { Request, Response, NextFunction } from "express";
 
 export default async function validateApiKey(
@@ -9,12 +8,10 @@ export default async function validateApiKey(
   const apiKey = req.headers["x-api-key"];
 
   if (typeof apiKey !== "string") {
-    throw { code: "unauthorized", message: "Invalid API key!" };
+    throw { type: "unprocessableEntity", message: "No API key" };
   }
 
-  const company = await findByApiKey(apiKey);
-
-  res.locals.company = company;
+  res.locals.apiKey = apiKey;
 
   next();
 }
