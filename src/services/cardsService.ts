@@ -1,4 +1,6 @@
 import * as cardRepository from "../repositories/cardRepository";
+import * as paymentRepository from "../repositories/paymentRepository";
+import * as rechargeRepository from "../repositories/rechargeRepository";
 import { findByApiKey } from "../repositories/companyRepository";
 import { findById } from "../repositories/employeeRepository";
 import { faker } from "@faker-js/faker";
@@ -84,7 +86,6 @@ export async function activateCard(
   const passwordRegex = /^[0-9]{4}$/;
 
   if (!card) {
-    console.log("entrei");
     throw { type: "notFound", message: "Card not found" };
   }
   const decriptedSecurityCode = cryptr.decrypt(card.securityCode);
@@ -116,7 +117,6 @@ function isExpired(date: string) {
   const expiringMonth = Number(monthYear[0]);
   const currentYear = Number(dayjs().year().toString().substring(2));
   const currentMonth = dayjs().month();
-  console.log([expiringYear, currentYear]);
   if (
     expiringYear < currentYear ||
     (currentYear === expiringYear && currentMonth > expiringMonth)
@@ -124,4 +124,44 @@ function isExpired(date: string) {
     return true;
   }
   return false;
+}
+
+export async function getCardBalance(cardId: number) {
+  const card = await cardRepository.findById(cardId);
+  if (!card) {
+    throw { type: "notFound", message: "Card not found" };
+  }
+  const payments = await paymentRepository.findByCardId(cardId);
+  const recharges = await rechargeRepository.findByCardId(cardId);
+
+  const balance = calculateBalance(payments, recharges);
+
+  return generateTransactionsObject(balance, payments, recharges);
+}
+
+function calculateBalance(payments: any[], recharges: any[]) {
+  const debts = payments.reduce(
+    (currentSum, payment) => currentSum + payment["amount"],
+    0
+  );
+  const credits = recharges.reduce(
+    (currentSum, payment) => currentSum + payment["amount"],
+    0
+  );
+  const balance = credits - debts;
+
+  return balance;
+}
+
+function generateTransactionsObject(
+  balance: number,
+  transactions: any[],
+  recharges: any[]
+) {
+  const result = {
+    balance,
+    transactions,
+    recharges,
+  };
+  return result;
 }

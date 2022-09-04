@@ -21,8 +21,10 @@ export async function activateCard(req: Request, res: Response) {
 }
 
 export async function getCardTransactionsBalance(req: Request, res: Response) {
-  const { cardId } = req.params;
-  res.send("Rota de visualizar saldo e transações de cartões " + cardId);
+  const cardId = Number(req.params.cardId);
+  const cardTransactionsBalance = await cardsService.getCardBalance(cardId);
+
+  res.status(200).send(cardTransactionsBalance);
 }
 
 export async function blockCard(req: Request, res: Response) {
