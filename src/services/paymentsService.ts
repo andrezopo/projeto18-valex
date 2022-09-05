@@ -57,6 +57,61 @@ export async function payTransaction(
   await paymentRepository.insert(payment);
 }
 
+export async function payOnlineTransaction(
+  cardId: number,
+  number: string,
+  cardholderName: string,
+  expirationDate: string,
+  securityCode: string,
+  businessId: number,
+  amount: number
+) {
+  const card = await cardRepository.findById(cardId);
+  if (!card) {
+    throw { type: "notFound", message: "Card not found" };
+  }
+  const decryptedCVV = cryptr.decrypt(card["securityCode"]);
+  if (
+    card["number"] !== number ||
+    card["cardholderName"] !== cardholderName ||
+    card["expirationDate"] !== expirationDate ||
+    decryptedCVV !== securityCode
+  ) {
+    throw { type: "unauthorized", message: "Invalid card data" };
+  }
+  if (!card["password"]) {
+    throw {
+      type: "notAcceptable",
+      message: "Card has never been activated yet",
+    };
+  }
+  if (isExpired(card.expirationDate)) {
+    throw { type: "notAcceptable", message: "Card expired" };
+  }
+  if (card.isBlocked) {
+    throw { type: "unauthorized", message: "This card is blocked" };
+  }
+  const business = await businessRepository.findById(businessId);
+  if (!business) {
+    throw { type: "notFound", message: "Business is not registered" };
+  }
+  if (business["type"] !== card["type"]) {
+    throw {
+      type: "notAcceptable",
+      message: "Card type not allowed in this business",
+    };
+  }
+  const { balance } = await getCardBalance(cardId);
+
+  if (balance < amount) {
+    throw { type: "notAcceptable", message: "Insufficient funds" };
+  }
+
+  const payment = createPaymentObject(cardId, businessId, amount);
+
+  await paymentRepository.insert(payment);
+}
+
 function createPaymentObject(
   cardId: number,
   businessId: number,
