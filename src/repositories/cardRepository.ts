@@ -3,7 +3,7 @@ import { mapObjectToUpdateQuery } from "../utils/sqlUtils";
 
 export type TransactionTypes =
   | "groceries"
-  | "restaurants"
+  | "restaurant"
   | "transport"
   | "education"
   | "health";
