@@ -4,8 +4,8 @@ import * as cardsService from "../services/cardsService";
 export async function createCard(req: Request, res: Response) {
   const cardInfo = req.body;
   const { apiKey } = res.locals;
-  await cardsService.createCard(cardInfo, apiKey);
-  res.status(201).send("Card created succesfully");
+  const createdCard = await cardsService.createCard(cardInfo, apiKey);
+  res.status(201).send(createdCard);
 }
 
 export async function activateCard(req: Request, res: Response) {

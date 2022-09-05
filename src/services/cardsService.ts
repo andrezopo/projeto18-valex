@@ -34,7 +34,13 @@ export async function createCard(cardInfo: any, apiKey: string) {
   }
   const newCard = populateCardInfos(cardInfo, employee);
 
-  cardRepository.insert(newCard);
+  const createdCard = { ...newCard };
+
+  newCard.securityCode = cryptr.encrypt(newCard.securityCode);
+
+  await cardRepository.insert(newCard);
+
+  return createdCard;
 }
 
 export async function activateCard(
@@ -139,7 +145,7 @@ export async function unlockCard(cardId: number, password: string) {
 
 function populateCardInfos(cardInfo: any, employee: any) {
   const cardNumber = faker.finance.creditCardNumber();
-  const securityCode = encryptSensibleData(faker.finance.creditCardCVV());
+  const securityCode = faker.finance.creditCardCVV();
   const employeeName = employee.fullName;
   const cardholderName = generateCardholderName(employeeName);
   const expirationDate = generateExpirationDate();
